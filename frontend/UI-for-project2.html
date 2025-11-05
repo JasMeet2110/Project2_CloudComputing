@@ -1,0 +1,216 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nutritional Insights Dashboard</title>
+  <!-- Tailwind CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.0/dist/tailwind.min.css"
+    rel="stylesheet"
+  />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-900">
+  <!-- Header -->
+  <header class="bg-blue-600 p-4 text-white shadow-lg">
+    <h1 class="text-3xl font-semibold text-center">Nutritional Insights Dashboard</h1>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto p-6">
+    <!-- Charts Section -->
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4 text-blue-700">Explore Nutritional Insights</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white p-4 shadow-md rounded-lg">
+          <h3 class="font-semibold text-lg mb-2">Average Macronutrients by Diet</h3>
+          <canvas id="barChart" class="w-full h-48"></canvas>
+        </div>
+
+        <div class="bg-white p-4 shadow-md rounded-lg">
+          <h3 class="font-semibold text-lg mb-2">Protein vs Carbs Scatter</h3>
+          <canvas id="scatterPlot" class="w-full h-48"></canvas>
+        </div>
+
+        <div class="bg-white p-4 shadow-md rounded-lg">
+          <h3 class="font-semibold text-lg mb-2">Calorie Distribution by Diet</h3>
+          <canvas id="pieChart" class="w-full h-48"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter Section -->
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4 text-blue-700">Filters & Interactions</h2>
+      <div class="flex flex-wrap items-center gap-4">
+        <input
+          id="proteinFilter"
+          type="number"
+          placeholder="Min Protein (g)"
+          class="p-2 border rounded w-40"
+        />
+        <button
+          id="fetchBtn"
+          class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+        >
+          Get Nutritional Insights
+        </button>
+        <button
+          id="resetBtn"
+          class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
+        >
+          Reset
+        </button>
+      </div>
+    </section>
+
+    <!-- Info Section -->
+    <section>
+      <h2 class="text-2xl font-semibold mb-4 text-blue-700">About</h2>
+      <p class="text-gray-700 leading-relaxed">
+        This dashboard fetches and visualizes live nutritional data directly from an
+        <strong>Azure Function</strong> connected to <strong>Azure Blob Storage</strong>.
+        Each chart updates dynamically based on your chosen filters. Deployed using
+        <strong>serverless cloud architecture</strong>.
+      </p>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-blue-600 text-white text-center p-4 mt-10">
+    &copy; 2025 Nutritional Insights. All Rights Reserved.
+  </footer>
+
+  <!-- Script Section -->
+  <script>
+    const apiBase =
+      "https://diet-func-1927294704.azurewebsites.net/api/dietinsights";
+
+    let barChart, pieChart, scatterChart;
+
+    async function loadData(minProtein = null) {
+      try {
+        let url = apiBase;
+        if (minProtein) url += `?min_protein=${minProtein}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        renderCharts(data);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        alert("Failed to load data from Azure Function.");
+      }
+    }
+
+    function renderCharts(data) {
+      const macros = data.charts.macros_by_diet;
+      const calories = data.charts.calories_by_diet || [];
+      const trend = data.charts.trend;
+
+      // Destroy existing charts (for re-render)
+      if (barChart) barChart.destroy();
+      if (pieChart) pieChart.destroy();
+      if (scatterChart) scatterChart.destroy();
+
+      // ---- Bar Chart ----
+      const barCtx = document.getElementById("barChart").getContext("2d");
+      barChart = new Chart(barCtx, {
+        type: "bar",
+        data: {
+          labels: macros.map((d) => d.diet),
+          datasets: [
+            {
+              label: "Protein (g)",
+              data: macros.map((d) => d.protein_g),
+              backgroundColor: "rgba(59,130,246,0.7)",
+            },
+            {
+              label: "Carbs (g)",
+              data: macros.map((d) => d.carbs_g),
+              backgroundColor: "rgba(34,197,94,0.7)",
+            },
+            {
+              label: "Fat (g)",
+              data: macros.map((d) => d.fat_g),
+              backgroundColor: "rgba(249,115,22,0.7)",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+
+      // ---- Pie Chart ----
+      const pieCtx = document.getElementById("pieChart").getContext("2d");
+      pieChart = new Chart(pieCtx, {
+        type: "pie",
+        data: {
+          labels: calories.map((d) => d.diet),
+          datasets: [
+            {
+              data: calories.map((d) => d.calories),
+              backgroundColor: [
+                "rgba(59,130,246,0.7)",
+                "rgba(34,197,94,0.7)",
+                "rgba(249,115,22,0.7)",
+                "rgba(168,85,247,0.7)",
+                "rgba(239,68,68,0.7)",
+              ],
+            },
+          ],
+        },
+        options: {
+          plugins: { legend: { position: "right" } },
+        },
+      });
+
+      // ---- Scatter Plot ----
+      const scatterCtx = document.getElementById("scatterPlot").getContext("2d");
+      const scatterData = trend.map((t) => ({
+        x: t.protein_g,
+        y: t.carbs_g,
+      }));
+      scatterChart = new Chart(scatterCtx, {
+        type: "scatter",
+        data: {
+          datasets: [
+            {
+              label: "Protein vs Carbs",
+              data: scatterData,
+              backgroundColor: "rgba(147,51,234,0.7)",
+            },
+          ],
+        },
+        options: {
+          scales: {
+            x: { title: { display: true, text: "Protein (g)" } },
+            y: { title: { display: true, text: "Carbs (g)" } },
+          },
+        },
+      });
+    }
+
+    // Event Listeners
+    document
+      .getElementById("fetchBtn")
+      .addEventListener("click", () => {
+        const minProtein = document.getElementById("proteinFilter").value;
+        loadData(minProtein || null);
+      });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      document.getElementById("proteinFilter").value = "";
+      loadData();
+    });
+
+    // Load data on startup
+    loadData();
+  </script>
+</body>
+</html>
