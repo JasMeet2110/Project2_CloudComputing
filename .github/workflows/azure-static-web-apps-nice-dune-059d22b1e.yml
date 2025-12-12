@@ -23,7 +23,6 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          #### 👇 These are the important paths
-          app_location: "frontend"        # Your HTML, CSS, JS folder
-          api_location: ""                # (empty - we’re not deploying backend here)
-          output_location: ""             # leave blank for plain HTML site
+          app_location: "frontend"
+          api_location: ""
+          output_location: ""

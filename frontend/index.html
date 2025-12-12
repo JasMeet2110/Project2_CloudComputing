@@ -3,214 +3,263 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nutritional Insights Dashboard</title>
-  <!-- Tailwind CSS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.0/dist/tailwind.min.css"
-    rel="stylesheet"
-  />
-  <!-- Chart.js -->
+  <title>Nutritional Insights - Phase 3</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.0/dist/tailwind.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body class="bg-gray-100 text-gray-900">
-  <!-- Header -->
-  <header class="bg-blue-600 p-4 text-white shadow-lg">
-    <h1 class="text-3xl font-semibold text-center">Nutritional Insights Dashboard</h1>
-  </header>
 
-  <!-- Main Content -->
-  <main class="container mx-auto p-6">
-    <!-- Charts Section -->
-    <section class="mb-8">
-      <h2 class="text-2xl font-semibold mb-4 text-blue-700">Explore Nutritional Insights</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div class="bg-white p-4 shadow-md rounded-lg">
-          <h3 class="font-semibold text-lg mb-2">Average Macronutrients by Diet</h3>
-          <canvas id="barChart" class="w-full h-48"></canvas>
-        </div>
-
-        <div class="bg-white p-4 shadow-md rounded-lg">
-          <h3 class="font-semibold text-lg mb-2">Protein vs Carbs Scatter</h3>
-          <canvas id="scatterPlot" class="w-full h-48"></canvas>
-        </div>
-
-        <div class="bg-white p-4 shadow-md rounded-lg">
-          <h3 class="font-semibold text-lg mb-2">Calorie Distribution by Diet</h3>
-          <canvas id="pieChart" class="w-full h-48"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <!-- Filter Section -->
-    <section class="mb-8">
-      <h2 class="text-2xl font-semibold mb-4 text-blue-700">Filters & Interactions</h2>
-      <div class="flex flex-wrap items-center gap-4">
-        <input
-          id="proteinFilter"
-          type="number"
-          placeholder="Min Protein (g)"
-          class="p-2 border rounded w-40"
-        />
-        <button
-          id="fetchBtn"
-          class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-        >
-          Get Nutritional Insights
-        </button>
-        <button
-          id="resetBtn"
-          class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
-        >
-          Reset
+  <div id="loginOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center hidden">
+    <div class="bg-white p-8 rounded-lg shadow-2xl text-center max-w-md w-full">
+      <h1 class="text-3xl font-bold text-blue-600 mb-4">Welcome Back</h1>
+      <p class="text-gray-600 mb-8">Please log in to access the Nutritional Dashboard.</p>
+      
+      <div class="space-y-4">
+        <a href="/.auth/login/github" class="block w-full py-3 px-4 bg-gray-800 text-white rounded hover:bg-gray-700 font-semibold transition">
+          Login with GitHub
+        </a>
+        <a href="/.auth/login/google" class="block w-full py-3 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition">
+          Login with Google
+        </a>
+        <button onclick="mockLogin()" class="block w-full py-2 text-sm text-gray-500 hover:text-gray-700 underline mt-4">
+          (Developer Mode) Skip Login
         </button>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <!-- Info Section -->
-    <section>
-      <h2 class="text-2xl font-semibold mb-4 text-blue-700">About</h2>
-      <p class="text-gray-700 leading-relaxed">
-        This dashboard fetches and visualizes live nutritional data directly from an
-        <strong>Azure Function</strong> connected to <strong>Azure Blob Storage</strong>.
-        Each chart updates dynamically based on your chosen filters. Deployed using
-        <strong>serverless cloud architecture</strong>.
-      </p>
-    </section>
-  </main>
+  <div id="dashboard" class="hidden">
+    
+    <header class="bg-blue-700 text-white shadow-lg">
+      <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold">🥗 DietInsights Pro</h1>
+        <div class="flex items-center space-x-4">
+          <span id="userName" class="font-medium bg-blue-800 py-1 px-3 rounded">Guest</span>
+          <a href="/.auth/logout" class="text-sm hover:text-blue-200 underline">Logout</a>
+        </div>
+      </div>
+    </header>
 
-  <!-- Footer -->
-  <footer class="bg-blue-600 text-white text-center p-4 mt-10">
-    &copy; 2025 Nutritional Insights. All Rights Reserved.
-  </footer>
+    <main class="container mx-auto p-6 space-y-8">
+      
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-gray-800">📊 Global Stats (Cached)</h2>
+          <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Performance Optimized</span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white p-4 rounded shadow">
+            <h3 class="font-semibold mb-2 text-center">Macros by Diet</h3>
+            <canvas id="barChart" height="200"></canvas>
+          </div>
+          <div class="bg-white p-4 rounded shadow">
+            <h3 class="font-semibold mb-2 text-center">Calories by Diet</h3>
+            <canvas id="pieChart" height="200"></canvas>
+          </div>
+          <div class="bg-white p-4 rounded shadow">
+            <h3 class="font-semibold mb-2 text-center">Carbs vs Protein Trend</h3>
+            <canvas id="scatterChart" height="200"></canvas>
+          </div>
+        </div>
+      </section>
 
-  <!-- Script Section -->
+      <section class="bg-white p-6 rounded shadow-lg">
+        <div class="border-b pb-4 mb-4">
+          <h2 class="text-xl font-bold text-gray-800 mb-2">🔍 Recipe Search</h2>
+          <p class="text-sm text-gray-500">Search the Cosmos DB database with pagination.</p>
+        </div>
+
+        <div class="flex flex-wrap gap-4 mb-6">
+          <input type="text" id="searchInput" placeholder="Search recipes (e.g. 'Chicken')" 
+                 class="flex-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+          
+          <select id="dietFilter" class="border p-2 rounded bg-white">
+            <option value="">All Diets</option>
+            <option value="keto">Keto</option>
+            <option value="vegan">Vegan</option>
+            <option value="paleo">Paleo</option>
+            <option value="mediterranean">Mediterranean</option>
+            <option value="dash">Dash</option>
+          </select>
+
+          <button onclick="runSearch(1)" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+            Search
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-50 text-gray-600 text-sm uppercase">
+                <th class="p-3 border-b">Recipe Name</th>
+                <th class="p-3 border-b">Diet</th>
+                <th class="p-3 border-b">Cuisine</th>
+                <th class="p-3 border-b">Calories</th>
+                <th class="p-3 border-b">Protein (g)</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody" class="text-sm text-gray-700">
+              </tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-between items-center mt-6">
+          <button id="prevBtn" onclick="changePage(-1)" class="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50">Previous</button>
+          <span id="pageIndicator" class="text-gray-600">Page 1</span>
+          <button id="nextBtn" onclick="changePage(1)" class="px-4 py-2 border rounded hover:bg-gray-100">Next</button>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
   <script>
-    const apiBase =
-      "https://diet-func-1927294704.azurewebsites.net/api/dietinsights";
+    // Update this with your deployed Function URL if running locally
+    // If deployed to Azure Static Web Apps, using "/api" is sufficient
+    const API_BASE = "https://diet-func-phase3-c2bsd7f8fjarctfw.westus2-01.azurewebsites.net/api";
 
-    let barChart, pieChart, scatterChart;
+    // State
+    let currentPage = 1;
+    let user = null;
 
-    async function loadData(minProtein = null) {
+    // --- 1. AUTHENTICATION LOGIC ---
+    async function checkAuth() {
       try {
-        let url = apiBase;
-        if (minProtein) url += `?min_protein=${minProtein}`;
-        const res = await fetch(url);
-        const data = await res.json();
+        const res = await fetch('/.auth/me');
+        const payload = await res.json();
+        const clientPrincipal = payload.clientPrincipal;
 
-        renderCharts(data);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        alert("Failed to load data from Azure Function.");
+        if (clientPrincipal) {
+          user = clientPrincipal;
+          document.getElementById('userName').textContent = user.userDetails;
+          showDashboard();
+        } else {
+          document.getElementById('loginOverlay').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.warn("Running locally or auth failed.", error);
+        // Uncomment below to force login screen locally
+        document.getElementById('loginOverlay').classList.remove('hidden');
       }
     }
 
-    function renderCharts(data) {
-      const macros = data.charts.macros_by_diet;
-      const calories = data.charts.calories_by_diet || [];
-      const trend = data.charts.trend;
+    function showDashboard() {
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      loadGlobalStats();
+      runSearch(1); // Load initial table
+    }
 
-      // Destroy existing charts (for re-render)
-      if (barChart) barChart.destroy();
-      if (pieChart) pieChart.destroy();
-      if (scatterChart) scatterChart.destroy();
+    function mockLogin() {
+      user = { userDetails: "Developer (Local)" };
+      document.getElementById('userName').textContent = user.userDetails;
+      showDashboard();
+    }
 
-      // ---- Bar Chart ----
-      const barCtx = document.getElementById("barChart").getContext("2d");
-      barChart = new Chart(barCtx, {
-        type: "bar",
+    // --- 2. PERFORMANCE: LOAD CACHED STATS ---
+    async function loadGlobalStats() {
+      try {
+        const res = await fetch(`${API_BASE}/dietinsights`);
+        const data = await res.json();
+        
+        if (data.charts) {
+          renderCharts(data.charts);
+        }
+      } catch (err) {
+        console.error("Failed to load stats", err);
+      }
+    }
+
+    // --- 3. INTERACTION: SEARCH & PAGINATION ---
+    async function runSearch(page) {
+      currentPage = page;
+      document.getElementById('pageIndicator').textContent = `Page ${currentPage}`;
+      
+      const q = document.getElementById('searchInput').value;
+      const diet = document.getElementById('dietFilter').value;
+      const limit = 10;
+
+      const url = `${API_BASE}/recipes/search?q=${q}&diet=${diet}&page=${page}&limit=${limit}`;
+      
+      try {
+        const res = await fetch(url);
+        const recipes = await res.json();
+        
+        const tbody = document.getElementById('resultsBody');
+        tbody.innerHTML = "";
+
+        recipes.forEach(r => {
+          const row = `
+            <tr class="hover:bg-gray-50 border-b">
+              <td class="p-3 font-medium">${r.Recipe_name || 'Unknown'}</td>
+              <td class="p-3"><span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">${r.diet_type}</span></td>
+              <td class="p-3">${r.Cuisine_type || '-'}</td>
+              <td class="p-3">${Math.round(r.calories)}</td>
+              <td class="p-3">${Math.round(r.protein_g)}g</td>
+            </tr>
+          `;
+          tbody.innerHTML += row;
+        });
+
+        // Simple disable logic for pagination
+        document.getElementById('prevBtn').disabled = (currentPage === 1);
+        document.getElementById('nextBtn').disabled = (recipes.length < limit);
+
+      } catch (err) {
+        console.error("Search failed", err);
+      }
+    }
+
+    function changePage(delta) {
+      if (currentPage + delta < 1) return;
+      runSearch(currentPage + delta);
+    }
+
+    // --- 4. CHARTS RENDERING ---
+    function renderCharts(charts) {
+      // Bar Chart
+      new Chart(document.getElementById('barChart'), {
+        type: 'bar',
         data: {
-          labels: macros.map((d) => d.diet),
-          datasets: [
-            {
-              label: "Protein (g)",
-              data: macros.map((d) => d.protein_g),
-              backgroundColor: "rgba(59,130,246,0.7)",
-            },
-            {
-              label: "Carbs (g)",
-              data: macros.map((d) => d.carbs_g),
-              backgroundColor: "rgba(34,197,94,0.7)",
-            },
-            {
-              label: "Fat (g)",
-              data: macros.map((d) => d.fat_g),
-              backgroundColor: "rgba(249,115,22,0.7)",
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { position: "bottom" } },
-          scales: { y: { beginAtZero: true } },
-        },
+          labels: charts.macros_by_diet.map(d => d.diet_type),
+          datasets: [{
+            label: 'Protein (g)',
+            data: charts.macros_by_diet.map(d => d.protein_g),
+            backgroundColor: '#3B82F6'
+          }]
+        }
       });
 
-      // ---- Pie Chart ----
-      const pieCtx = document.getElementById("pieChart").getContext("2d");
-      pieChart = new Chart(pieCtx, {
-        type: "pie",
+      // Pie Chart
+      new Chart(document.getElementById('pieChart'), {
+        type: 'doughnut',
         data: {
-          labels: calories.map((d) => d.diet),
-          datasets: [
-            {
-              data: calories.map((d) => d.calories),
-              backgroundColor: [
-                "rgba(59,130,246,0.7)",
-                "rgba(34,197,94,0.7)",
-                "rgba(249,115,22,0.7)",
-                "rgba(168,85,247,0.7)",
-                "rgba(239,68,68,0.7)",
-              ],
-            },
-          ],
-        },
-        options: {
-          plugins: { legend: { position: "right" } },
-        },
+          labels: charts.calories_by_diet.map(d => d.diet_type),
+          datasets: [{
+            data: charts.calories_by_diet.map(d => d.calories),
+            backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6']
+          }]
+        }
       });
 
-      // ---- Scatter Plot ----
-      const scatterCtx = document.getElementById("scatterPlot").getContext("2d");
-      const scatterData = trend.map((t) => ({
-        x: t.protein_g,
-        y: t.carbs_g,
-      }));
-      scatterChart = new Chart(scatterCtx, {
-        type: "scatter",
+      // Scatter Chart
+      new Chart(document.getElementById('scatterChart'), {
+        type: 'scatter',
         data: {
-          datasets: [
-            {
-              label: "Protein vs Carbs",
-              data: scatterData,
-              backgroundColor: "rgba(147,51,234,0.7)",
-            },
-          ],
-        },
-        options: {
-          scales: {
-            x: { title: { display: true, text: "Protein (g)" } },
-            y: { title: { display: true, text: "Carbs (g)" } },
-          },
-        },
+          datasets: [{
+            label: 'Carbs vs Protein',
+            data: charts.trend.map(d => ({x: d.protein_g, y: d.carbs_g})),
+            backgroundColor: '#EC4899'
+          }]
+        }
       });
     }
 
-    // Event Listeners
-    document
-      .getElementById("fetchBtn")
-      .addEventListener("click", () => {
-        const minProtein = document.getElementById("proteinFilter").value;
-        loadData(minProtein || null);
-      });
+    // Start
+    checkAuth();
 
-    document.getElementById("resetBtn").addEventListener("click", () => {
-      document.getElementById("proteinFilter").value = "";
-      loadData();
-    });
-
-    // Load data on startup
-    loadData();
   </script>
 </body>
 </html>
